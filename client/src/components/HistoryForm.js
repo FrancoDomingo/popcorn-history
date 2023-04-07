@@ -1,8 +1,11 @@
 import {Button, Card, CardContent, CircularProgress, Grid, TextField, Typography} from '@mui/material'
 import { useState, useEffect } from 'react';
 import {useNavigate, useParams} from 'react-router-dom'
+import {useDispatch} from 'react-redux'
+import {addHistory, updateHistory} from '../features/history/historySlice'
 
 export default function HistoryForm() {
+
   const [history, setHistory] = useState({
     title: '', 
     altTitle: '', 
@@ -12,12 +15,13 @@ export default function HistoryForm() {
     description: '',
     url: ''
   })
-
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState(false)
 
   const navigate = useNavigate()
   const params = useParams()
+
+  const dispatch = useDispatch()
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,15 +34,20 @@ export default function HistoryForm() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(history)
+      }).then(async response => {
+        const data = await response.json()
+        dispatch(updateHistory(data))
       })
-    } else {
-      const response = await fetch('http://localhost:4000/history', {
-      method: 'POST',
-      body: JSON.stringify(history),
-      headers: {"Content-Type": "application/json"}
-      })   
-      const data = await response.json()
-      console.log(data)
+      
+    } else {        
+        await fetch('http://localhost:4000/history', {
+        method: 'POST',
+        body: JSON.stringify(history),
+        headers: {"Content-Type": "application/json"}
+        }).then(async response => {
+          const data = await response.json()        
+          dispatch(addHistory(data))
+        })          
     }
 
     setLoading(false)
@@ -58,7 +67,7 @@ export default function HistoryForm() {
       altTitle: data[0].titulo_secundario,
       hType: data[0].history_type,
       img: data[0].img,
-      date: new Date().toDateString(),
+      date: data[0].date,
       description: data[0].descripcion,
       url: data[0].url
     })

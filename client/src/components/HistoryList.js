@@ -1,10 +1,14 @@
 import {useEffect, useState} from 'react'
-import {useNavigate} from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
+import {useSelector, useDispatch} from 'react-redux'
+import {selectAllHistory, fetchHistory, deleteHistory} from '../features/history/historySlice'
+
 import {Button, Card, CardContent, CardMedia, CardActions, Typography, Grid, Skeleton, Pagination} from '@mui/material'
 
 export default function HistoryList() {
-  const [history, setHistory] = useState([])
-  const [loading, setLoading] = useState(false)
+  const dispatch = useDispatch()
+  const history = useSelector(selectAllHistory)
+  const historyStatus = useSelector(state => state.history.status)
 
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage] = useState(9);
@@ -18,26 +22,20 @@ export default function HistoryList() {
 
   const navigate = useNavigate()
   
-  const loadHistory = async () => {
-    setLoading(true)
-
-    const response = await fetch('http://localhost:4000/history/')
-    const data = await response.json()
-    
-    setHistory(data)
-    setLoading(false)
-  }
-
   useEffect(() => {
-    loadHistory()
-  }, [])
+    if(historyStatus === 'idle'){
+      dispatch(fetchHistory())
+    }
+  }, [historyStatus, dispatch])
 
-  const deleteHistory = async (id) =>{
+  const deleteEntry = async (id) =>{
     try {
         await fetch(`http://localhost:4000/history/${id}`, {
         method: 'DELETE'
+      }).then(async response => {
+        const data = await response.json()        
+        dispatch(deleteHistory(data))
       })
-      setHistory(history.filter(history => history.id !== id))
 
     } catch (error) {
       console.log(error)
@@ -53,17 +51,19 @@ export default function HistoryList() {
       <h1>History</h1>
       <Grid container spacing={2}>
       {        
-        (loading ? Array.from(new Array(9)) : currentRecords).map((currentRecords, index) => (
-          <Grid item xs={4} key={index}>  
+        (historyStatus === 'loading' ? Array.from(new Array(9)) : currentRecords).map((currentRecords, index) => (
+          <Grid item xs={12} sm={6} md={4} key={index}>  
             { 
               currentRecords ?               
               (<Card key={currentRecords.id} sx={{ marginBottom: ".7rem", maxWidth: 345, height: 700}}>
-                <CardMedia
-                  component="img"
-                  alt={currentRecords.titulo_original}
-                  height="500"
-                  image={currentRecords.img} 
-                />
+                <Link to={currentRecords.url} target="_blank" rel="noopener noreferrer">
+                  <CardMedia
+                    component="img"
+                    alt={currentRecords.titulo_original}
+                    height="500"
+                    image={currentRecords.img}                  
+                  />
+                </Link>
                 <CardContent style={{height: 110}}>
                   {/* TITULO */}
                   <Typography 
@@ -102,7 +102,7 @@ export default function HistoryList() {
                       onClick={
                         () =>{
                           if(window.confirm(`Eliminar ${currentRecords.titulo_original} del historial?`)){
-                            deleteHistory(currentRecords.id)
+                            deleteEntry(currentRecords.id)
                           }                        
                         }
                     }>

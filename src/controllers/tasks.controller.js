@@ -30,26 +30,6 @@ const getSpecificHistory = async(req, res, next) => {
     }
 };
 
-const getHistoryByPage = async(req, res, next) => {
-    try {
-        const {id} = req.params
-        //let sql = 'SELECT * FROM history WHERE titulo_original LIKE \'%' + title + '%\' OR titulo_secundario LIKE \'%' + title + '%\''        
-        let sql = 'SELECT * FROM history WHERE id > ' + id + ' limit 9'
-        const result = await popcorn.query(sql)
-
-        if(result.rowCount === 0){
-            return res.status(404).json({
-                message: "No se encontró búsqueda."
-            })
-        }
-
-        res.json(result.rows)
-
-    } catch (error) {
-        next(error);
-    }
-};
-
 const addHistory = async (req, res, next) => {
     try {        
         const { title, altTitle, hType, img, date, description, url } = req.body;
@@ -80,6 +60,8 @@ const updateHistory = async (req, res, next) => {
            }) 
         }    
         return res.json(result.rows[0])
+        //mapear campos
+    
     } catch (error) {
         next(error);
     }
@@ -88,14 +70,16 @@ const updateHistory = async (req, res, next) => {
 const deleteHistory = async (req, res, next) => {
     try {        
         const {id} = req.params
-        const result = await popcorn.query('DELETE FROM history WHERE id = $1', [id])
+        const exists = await popcorn.query('SELECT * FROM history WHERE ID = $1', [id])       
 
-    if(result.rowCount === 0){
-        return res.status(404).json({
-            message: "No se encontró registro a eliminar"
-        })
-    }
-    return res.sendStatus(204);
+        if(exists.rowCount === 0){
+            return res.status(404).json({
+                message: "No se encontró registro a eliminar"
+            })
+        }else{
+            await popcorn.query('DELETE FROM history WHERE id = $1', [id])
+            return res.json(exists.rows[0]);
+        }     
     } catch (error) {
         next(error);
     }
@@ -104,7 +88,6 @@ const deleteHistory = async (req, res, next) => {
 module.exports = {
     getAllHistory,
     getSpecificHistory,
-    getHistoryByPage,
     addHistory,
     updateHistory,
     deleteHistory
