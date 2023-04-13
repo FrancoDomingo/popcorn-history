@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk} from '@reduxjs/toolkit'
 
 export const fetchHistory = createAsyncThunk(
     'history/fetch',
@@ -14,6 +14,7 @@ export const fetchHistory = createAsyncThunk(
 
 const initialState = {
     history: [],
+    searchResult: null,
     status: 'idle',
     error: null
 }
@@ -46,6 +47,15 @@ export const historySlice = createSlice({
             if(existingHistory){
                 state.history.splice(existingHistory)
             }
+        },
+        searchInHistory(state, action){                 
+            if(action.payload === null){  
+                state.searchResult = null   
+            }else{
+                const {id} = action.payload              
+                const historySearch = state.history.find(history => history.id === id)
+                state.searchResult = historySearch  
+            }          
         }
     },
     extraReducers: {
@@ -59,12 +69,14 @@ export const historySlice = createSlice({
         [fetchHistory.rejected]: (state, action) => {
             state.status = 'failed';
             state.error = action.error.message;
-        },
+        }
     },
 })
 
-export const { addHistory, updateHistory, deleteHistory} = historySlice.actions
+export const { addHistory, updateHistory, deleteHistory, searchInHistory} = historySlice.actions
 
 export const selectAllHistory = state => state.history.history
+
+export const selectFilteredHistory = state => state.history.searchResult
 
 export default historySlice.reducer

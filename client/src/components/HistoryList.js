@@ -1,13 +1,15 @@
 import {useEffect, useState} from 'react'
 import {Link, useNavigate} from 'react-router-dom'
 import {useSelector, useDispatch} from 'react-redux'
-import {selectAllHistory, fetchHistory, deleteHistory} from '../features/history/historySlice'
+import {selectAllHistory, fetchHistory, deleteHistory, selectFilteredHistory} from '../features/history/historySlice'
 
 import {Button, Card, CardContent, CardMedia, CardActions, Typography, Grid, Skeleton, Pagination} from '@mui/material'
 
 export default function HistoryList() {
   const dispatch = useDispatch()
   const history = useSelector(selectAllHistory)
+  const filteredHistory = useSelector(selectFilteredHistory) || ''
+
   const historyStatus = useSelector(state => state.history.status)
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -16,8 +18,8 @@ export default function HistoryList() {
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
 
-  const currentRecords = history.slice(indexOfFirstRecord, indexOfLastRecord);
-  const nPages = Math.ceil(history.length / recordsPerPage)
+  const currentRecords = filteredHistory ? [filteredHistory] : history.slice(indexOfFirstRecord, indexOfLastRecord);
+  const nPages = filteredHistory ? Math.ceil([filteredHistory].length / recordsPerPage) : Math.ceil(history.length / recordsPerPage)
   const pageNumbers = [...Array(nPages + 1).keys()].slice(1)
 
   const navigate = useNavigate()
@@ -51,7 +53,7 @@ export default function HistoryList() {
       <h1>History</h1>
       <Grid container spacing={2}>
       {        
-        (historyStatus === 'loading' ? Array.from(new Array(9)) : currentRecords).map((currentRecords, index) => (
+        (historyStatus === 'loading' ? [] : currentRecords).map((currentRecords, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>  
             { 
               currentRecords ?               
